@@ -9,6 +9,7 @@ class SyncService {
   final EncryptionService _encryption;
   final String _deviceId;
   final String _deviceName;
+  final String _devicePlatform;
   final Uint8List _key;
 
   String _lastUploadedHash = '';
@@ -21,11 +22,13 @@ class SyncService {
     required EncryptionService encryption,
     required String deviceId,
     required String deviceName,
+    required String devicePlatform,
     required Uint8List key,
   })  : _repo = repo,
         _encryption = encryption,
         _deviceId = deviceId,
         _deviceName = deviceName,
+        _devicePlatform = devicePlatform,
         _key = key;
 
   Future<void> uploadContent(String content) async {
@@ -43,6 +46,7 @@ class SyncService {
       'hash': hash,
       'sourceDevice': _deviceId,
       'sourceDeviceName': _deviceName,
+      'sourcePlatform': _devicePlatform,
       'timestamp': now.millisecondsSinceEpoch,
       'type': 'text',
     };

@@ -6,14 +6,17 @@ class SettingsProvider extends ChangeNotifier {
 
   bool _autoSync = true;
   int _historyLimit = 100;
+  ThemeMode _themeMode = ThemeMode.system;
 
   bool get autoSync => _autoSync;
   int get historyLimit => _historyLimit;
+  ThemeMode get themeMode => _themeMode;
 
   Future<void> initialize(LocalStorage storage) async {
     _storage = storage;
     _autoSync = storage.autoSync;
     _historyLimit = storage.historyLimit;
+    _themeMode = storage.themeMode;
     notifyListeners();
   }
 
@@ -26,6 +29,12 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> setHistoryLimit(int value) async {
     _historyLimit = value;
     await _storage?.setHistoryLimit(value);
+    notifyListeners();
+  }
+
+  Future<void> setThemeMode(ThemeMode mode) async {
+    _themeMode = mode;
+    await _storage?.setThemeMode(mode);
     notifyListeners();
   }
 }

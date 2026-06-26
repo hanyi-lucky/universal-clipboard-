@@ -70,18 +70,28 @@ class _UnlockScreenState extends State<UnlockScreen> {
     try {
       final storage = await LocalStorage.create();
       final auth = context.read<AuthProvider>();
+      final cloudRepo = auth.cloudRepo;
       List<int> salt;
 
-      final existingSalt = storage.encryptionSalt;
-      if (existingSalt == null) {
-        salt = _encryption.generateSalt().toList();
-        final saltHex = salt.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
-        await storage.setEncryptionSalt(saltHex);
+      // 1. 先尝试从云端下载 salt
+      final cloudSalt = await cloudRepo.getSalt();
+
+      if (cloudSalt != null) {
+        // 云端已有 salt → 所有设备共享同一 salt
+        salt = _hexToBytes(cloudSalt);
+        await storage.setEncryptionSalt(cloudSalt);
       } else {
-        salt = [];
-        for (int i = 0; i < existingSalt.length; i += 2) {
-          salt.add(int.parse(existingSalt.substring(i, i + 2), radix: 16));
+        // 云端无 salt → 生成新 salt 并上传（首台设备）
+        final localSalt = storage.encryptionSalt;
+        if (localSalt != null) {
+          salt = _hexToBytes(localSalt);
+        } else {
+          salt = _encryption.generateSalt().toList();
+          final saltHex = _bytesToHex(salt);
+          await storage.setEncryptionSalt(saltHex);
         }
+        // 上传到云端，让其他设备共享
+        await cloudRepo.setSalt(_bytesToHex(salt));
       }
 
       final key = await _encryption.deriveKey(password, salt);
@@ -112,45 +122,105 @@ class _UnlockScreenState extends State<UnlockScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32.0),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 400),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.lock_outline, size: 64, color: Theme.of(context).colorScheme.primary),
-                const SizedBox(height: 24),
-                if (!_initialized)
-                  const Column(
-                    children: [
-                      CircularProgressIndicator(),
-                      SizedBox(height: 16),
-                      Text('正在连接服务器...', style: TextStyle(color: Colors.grey)),
-                    ],
-                  )
-                else if (!_authSuccess)
-                  Column(
-                    children: [
-                      const Icon(Icons.wifi_off, size: 48, color: Colors.orange),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: isDark
+                ? [const Color(0xFF1A1B2E), const Color(0xFF0D0E1A)]
+                : [const Color(0xFFF0F1FF), const Color(0xFFE8EAFF)],
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 400),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Logo
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF5B6CF0), Color(0xFF8B5CF6)],
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF5B6CF0).withOpacity(0.3),
+                            blurRadius: 20,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.content_paste_rounded,
+                        size: 36,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+
+                    if (!_initialized) ...[
+                      const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2.5),
+                      ),
                       const SizedBox(height: 16),
-                      const Text(
+                      Text(
+                        '正在连接服务器...',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.outline,
+                        ),
+                      ),
+                    ] else if (!_authSuccess) ...[
+                      // Error state
+                      Icon(
+                        Icons.wifi_off_rounded,
+                        size: 48,
+                        color: theme.colorScheme.error,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
                         '无法连接服务器',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                       const SizedBox(height: 8),
-                      const Text(
+                      Text(
                         '请检查网络连接后重试',
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.grey),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.outline,
+                        ),
                       ),
                       if (_error != null) ...[
-                        const SizedBox(height: 8),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Text(_error!, style: const TextStyle(color: Colors.red, fontSize: 12), textAlign: TextAlign.center),
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.errorContainer,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            _error!,
+                            style: TextStyle(
+                              color: theme.colorScheme.onErrorContainer,
+                              fontSize: 12,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
                         ),
                       ],
                       const SizedBox(height: 24),
@@ -158,7 +228,7 @@ class _UnlockScreenState extends State<UnlockScreen> {
                         width: double.infinity,
                         height: 48,
                         child: ElevatedButton.icon(
-                          icon: const Icon(Icons.refresh),
+                          icon: const Icon(Icons.refresh_rounded),
                           label: const Text('重试'),
                           onPressed: () {
                             setState(() {
@@ -169,50 +239,75 @@ class _UnlockScreenState extends State<UnlockScreen> {
                           },
                         ),
                       ),
+                    ] else ...[
+                      // Password input
+                      Text(
+                        _isFirstTime ? '设置主密码' : '解锁',
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _isFirstTime
+                            ? '创建密码加密剪切板数据\n请在所有设备上使用相同密码'
+                            : '输入主密码解锁',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.outline,
+                          height: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 28),
+                      TextField(
+                        controller: _passwordController,
+                        obscureText: true,
+                        decoration: InputDecoration(
+                          labelText: '主密码',
+                          prefixIcon: const Icon(Icons.lock_outline_rounded),
+                          errorText: _error,
+                        ),
+                        onSubmitted: (_) => _unlock(),
+                      ),
+                      const SizedBox(height: 20),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: ElevatedButton(
+                          onPressed: _loading ? null : _unlock,
+                          child: _loading
+                              ? const SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
+                                )
+                              : Text(
+                                  _isFirstTime ? '创建并开始' : '解锁',
+                                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                                ),
+                        ),
+                      ),
                     ],
-                  )
-                else ...[
-                  Text(
-                    _isFirstTime ? '设置主密码' : '解锁',
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _isFirstTime
-                        ? '创建密码加密剪切板数据。请在所有设备上使用相同密码。'
-                        : '输入主密码解锁。',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey),
-                  ),
-                  const SizedBox(height: 24),
-                  TextField(
-                    controller: _passwordController,
-                    obscureText: true,
-                    decoration: InputDecoration(
-                      labelText: '主密码',
-                      border: const OutlineInputBorder(),
-                      errorText: _error,
-                    ),
-                    onSubmitted: (_) => _unlock(),
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: ElevatedButton(
-                      onPressed: _loading ? null : _unlock,
-                      child: _loading
-                          ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
-                          : Text(_isFirstTime ? '创建并开始' : '解锁'),
-                    ),
-                  ),
-                ],
-              ],
+                  ],
+                ),
+              ),
             ),
           ),
         ),
       ),
     );
+  }
+
+  List<int> _hexToBytes(String hex) {
+    final bytes = <int>[];
+    for (int i = 0; i < hex.length; i += 2) {
+      bytes.add(int.parse(hex.substring(i, i + 2), radix: 16));
+    }
+    return bytes;
+  }
+
+  String _bytesToHex(List<int> bytes) {
+    return bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
   }
 
   @override

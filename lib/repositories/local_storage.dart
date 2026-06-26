@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class LocalStorage {
@@ -9,6 +10,7 @@ class LocalStorage {
   static const _keyAutoSync = 'auto_sync';
   static const _keyHistoryLimit = 'history_limit';
   static const _keyHistory = 'clipboard_history';
+  static const _keyThemeMode = 'theme_mode';
 
   final SharedPreferences _prefs;
 
@@ -66,6 +68,23 @@ class LocalStorage {
 
   Future<void> setHistoryLimit(int value) async {
     await _prefs.setInt(_keyHistoryLimit, value);
+  }
+
+  // Theme
+  ThemeMode get themeMode {
+    final value = _prefs.getString(_keyThemeMode);
+    switch (value) {
+      case 'light':
+        return ThemeMode.light;
+      case 'dark':
+        return ThemeMode.dark;
+      default:
+        return ThemeMode.system;
+    }
+  }
+
+  Future<void> setThemeMode(ThemeMode mode) async {
+    await _prefs.setString(_keyThemeMode, mode.name);
   }
 
   // History

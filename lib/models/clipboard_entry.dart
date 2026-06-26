@@ -12,6 +12,7 @@ class ClipboardEntry {
   final String content;
   final String sourceDeviceId;
   final String sourceDeviceName;
+  final String sourcePlatform;
   final DateTime timestamp;
   final ContentType type;
   final bool isPinned;
@@ -21,6 +22,7 @@ class ClipboardEntry {
     required this.content,
     required this.sourceDeviceId,
     required this.sourceDeviceName,
+    this.sourcePlatform = 'unknown',
     required this.timestamp,
     required this.type,
     this.isPinned = false,
@@ -34,6 +36,7 @@ class ClipboardEntry {
     String? content,
     String? sourceDeviceId,
     String? sourceDeviceName,
+    String? sourcePlatform,
     DateTime? timestamp,
     ContentType? type,
     bool? isPinned,
@@ -43,6 +46,7 @@ class ClipboardEntry {
       content: content ?? this.content,
       sourceDeviceId: sourceDeviceId ?? this.sourceDeviceId,
       sourceDeviceName: sourceDeviceName ?? this.sourceDeviceName,
+      sourcePlatform: sourcePlatform ?? this.sourcePlatform,
       timestamp: timestamp ?? this.timestamp,
       type: type ?? this.type,
       isPinned: isPinned ?? this.isPinned,
@@ -54,6 +58,7 @@ class ClipboardEntry {
     'content': content,
     'sourceDeviceId': sourceDeviceId,
     'sourceDeviceName': sourceDeviceName,
+    'sourcePlatform': sourcePlatform,
     'timestamp': timestamp.toIso8601String(),
     'type': type.name,
     'isPinned': isPinned,
@@ -65,6 +70,7 @@ class ClipboardEntry {
       content: map['content'] as String,
       sourceDeviceId: map['sourceDeviceId'] as String,
       sourceDeviceName: map['sourceDeviceName'] as String,
+      sourcePlatform: map['sourcePlatform'] as String? ?? 'unknown',
       timestamp: DateTime.parse(map['timestamp'] as String),
       type: ContentType.values.firstWhere((e) => e.name == map['type']),
       isPinned: map['isPinned'] as bool? ?? false,

@@ -3,42 +3,20 @@ import FlutterMacOS
 
 @main
 class AppDelegate: FlutterAppDelegate {
-  var statusItem: NSStatusItem?
 
   override func applicationDidFinishLaunching(_ notification: Notification) {
-    let controller = mainFlutterWindow?.contentViewController as! FlutterViewController
-    let channel = FlutterMethodChannel(
-      name: "universal_clipboard/system_tray",
-      binaryMessenger: controller.engine.binaryMessenger
-    )
-
-    // Create status bar item
-    statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-    if let button = statusItem?.button {
-      button.title = "📋"
-      button.action = #selector(statusItemClicked)
-    }
-
-    // Build menu
-    let menu = NSMenu()
-    menu.addItem(NSMenuItem(title: "Show Window", action: #selector(showWindow), keyEquivalent: "w"))
-    menu.addItem(NSMenuItem.separator())
-    menu.addItem(NSMenuItem(title: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
-    statusItem?.menu = menu
-
     super.applicationDidFinishLaunching(notification)
   }
 
-  @objc func statusItemClicked() {
-    NSApp.activate(ignoringOtherApps: true)
-    mainFlutterWindow?.makeKeyAndOrderFront(nil)
+  // 点击 Dock 图标时重新显示窗口
+  override func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+    if !flag {
+      mainFlutterWindow?.makeKeyAndOrderFront(nil)
+    }
+    return true
   }
 
-  @objc func showWindow() {
-    NSApp.activate(ignoringOtherApps: true)
-    mainFlutterWindow?.makeKeyAndOrderFront(nil)
-  }
-
+  // 关闭最后一个窗口时不退出，退到后台
   override func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
     return false
   }

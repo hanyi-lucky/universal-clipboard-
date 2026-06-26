@@ -11,54 +11,87 @@ class MergeBar extends StatelessWidget {
       builder: (context, provider, _) {
         if (!provider.isMergeMode) return const SizedBox.shrink();
 
+        final theme = Theme.of(context);
+
         return Container(
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            border: Border(top: BorderSide(color: Theme.of(context).dividerColor)),
+            color: theme.colorScheme.surface,
+            border: Border(
+              top: BorderSide(color: theme.dividerColor.withOpacity(0.3)),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, -2),
+              ),
+            ],
           ),
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Row(
                 children: [
-                  const Text('分隔符:'),
+                  Icon(Icons.tune_rounded, size: 18, color: theme.colorScheme.outline),
                   const SizedBox(width: 8),
-                  DropdownButton<String>(
-                    value: provider.mergeSeparator,
-                    items: const [
-                      DropdownMenuItem(value: '\n', child: Text('换行符')),
-                      DropdownMenuItem(value: ',', child: Text('逗号')),
-                      DropdownMenuItem(value: ';', child: Text('分号')),
-                      DropdownMenuItem(value: ' ', child: Text('空格')),
+                  Text('分隔符', style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
+                  )),
+                  const SizedBox(width: 8),
+                  SegmentedButton<String>(
+                    segments: const [
+                      ButtonSegment(value: '\n', label: Text('换行')),
+                      ButtonSegment(value: ',', label: Text('逗号')),
+                      ButtonSegment(value: ';', label: Text('分号')),
+                      ButtonSegment(value: ' ', label: Text('空格')),
                     ],
-                    onChanged: (v) {
-                      if (v != null) provider.setSeparator(v);
+                    selected: {provider.mergeSeparator},
+                    onSelectionChanged: (v) {
+                      if (v.isNotEmpty) provider.setSeparator(v.first);
                     },
+                    showSelectedIcon: false,
+                    style: ButtonStyle(
+                      visualDensity: VisualDensity.compact,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      textStyle: WidgetStatePropertyAll(
+                        theme.textTheme.labelSmall,
+                      ),
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               Container(
                 width: double.infinity,
+                constraints: const BoxConstraints(maxHeight: 72),
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                  borderRadius: BorderRadius.circular(8),
+                  color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                constraints: const BoxConstraints(maxHeight: 80),
-                child: SingleChildScrollView(
-                  child: Text(
-                    provider.mergePreview.isEmpty ? '选择条目查看拼接预览' : provider.mergePreview,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ),
+                child: provider.mergePreview.isEmpty
+                    ? Center(
+                        child: Text(
+                          '选择条目查看拼接预览',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.outline,
+                          ),
+                        ),
+                      )
+                    : SingleChildScrollView(
+                        child: Text(
+                          provider.mergePreview,
+                          style: theme.textTheme.bodySmall?.copyWith(height: 1.5),
+                        ),
+                      ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
+                height: 44,
                 child: ElevatedButton.icon(
-                  icon: const Icon(Icons.copy),
+                  icon: const Icon(Icons.copy_rounded, size: 18),
                   label: Text('复制拼接内容 (${provider.selectedIds.length}条)'),
                   onPressed: provider.selectedIds.isEmpty
                       ? null

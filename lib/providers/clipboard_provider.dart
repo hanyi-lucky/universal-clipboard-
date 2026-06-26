@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -81,6 +82,7 @@ class ClipboardProvider extends ChangeNotifier {
       encryption: _encryption,
       deviceId: deviceId,
       deviceName: deviceName,
+      devicePlatform: Platform.operatingSystem,
       key: encryptionKey,
     );
 
@@ -110,6 +112,7 @@ class ClipboardProvider extends ChangeNotifier {
         content: content,
         sourceDeviceId: 'local',
         sourceDeviceName: '本设备',
+        sourcePlatform: Platform.operatingSystem,
         timestamp: DateTime.now(),
         type: ContentType.text,
       ));
@@ -142,6 +145,7 @@ class ClipboardProvider extends ChangeNotifier {
               content: content,
               sourceDeviceId: current['sourceDevice'] as String? ?? 'unknown',
               sourceDeviceName: current['sourceDeviceName'] as String? ?? 'Unknown',
+              sourcePlatform: current['sourcePlatform'] as String? ?? 'unknown',
               timestamp: DateTime.fromMillisecondsSinceEpoch(current['timestamp'] as int),
               type: ContentType.text,
             ));

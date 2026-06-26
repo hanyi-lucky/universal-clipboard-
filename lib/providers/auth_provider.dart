@@ -84,7 +84,7 @@ class AuthProvider extends ChangeNotifier {
     if (Platform.isMacOS) return 'Mac';
     if (Platform.isWindows) return 'Windows PC';
     if (Platform.isAndroid) return 'Android Phone';
-    if (Platform.isIOS) return 'iPad';
+    if (Platform.isIOS) return 'iOS Device';
     return 'Unknown Device';
   }
 

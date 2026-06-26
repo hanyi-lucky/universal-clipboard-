@@ -1,17 +1,82 @@
-# universal_clipboard
+# ClipFlow
 
-A new Flutter project.
+跨平台剪切板同步工具，支持端到端加密。
 
-## Getting Started
+## 功能
 
-This project is a starting point for a Flutter application.
+- 🔄 自动同步：复制内容后自动同步到其他设备
+- 🔒 端到端加密：AES-256-GCM + PBKDF2，数据安全
+- 📋 历史记录：保留最近 100 条复制记录
+- 🔀 多选拼接：选择多条内容合并复制
+- 🌙 主题切换：浅色/深色/跟随系统
 
-A few resources to get you started if this is your first Flutter project:
+## 支持平台
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+| 平台 | 状态 |
+|-----|------|
+| macOS | ✅ 已完成 |
+| Android | ✅ 已完成 |
+| Windows | ⏳ 待开发 |
+| iOS/iPadOS | ⏳ 快捷指令 + Web App |
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## 技术栈
+
+- **前端**：Flutter
+- **后端**：腾讯云开发 (CloudBase) + 云函数
+- **加密**：AES-256-GCM + PBKDF2-HMAC-SHA256
+- **数据库**：腾讯云 Firestore
+
+## 快速开始
+
+### 1. 安装依赖
+
+```bash
+flutter pub get
+```
+
+### 2. 配置云函数
+
+在腾讯云开发控制台创建云函数 `api`，代码见项目文档。
+
+### 3. 运行
+
+```bash
+# macOS
+flutter run -d macos
+
+# Android
+flutter run -d <device_id>
+
+# 构建
+flutter build macos --release
+flutter build apk --release
+```
+
+## 架构
+
+```
+Flutter App → HTTP POST → 云函数 (Node.js) → 腾讯云数据库
+```
+
+## 加密
+
+- 主密码 → PBKDF2 派生 256 位 AES 密钥
+- 每台设备共享同一 Salt（存储在云端）
+- 不同密码 → 不同密钥 → 无法解密
+
+## 项目结构
+
+```
+lib/
+├── core/          # 常量、异常定义
+├── models/        # 数据模型
+├── services/      # 核心业务逻辑
+├── repositories/  # 数据仓库
+├── providers/     # 状态管理
+├── screens/       # 页面
+└── widgets/       # 可复用组件
+```
+
+## 许可证
+
+MIT License

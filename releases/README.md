@@ -1,0 +1,38 @@
+# ClipFlow 安装包
+
+## 目录结构
+
+```
+releases/
+├── macos/      # macOS DMG 安装包
+├── windows/    # Windows EXE 安装包
+├── android/    # Android APK 安装包
+└── ios/        # iOS/iPadOS（快捷指令 + Web App）
+```
+
+## 各平台打包命令
+
+```bash
+# macOS
+flutter build macos --release
+# DMG 打包
+hdiutil create -volname "ClipFlow" \
+  -srcfolder build/macos/Build/Products/Release/ClipFlow.app \
+  -ov -format UDZO releases/macos/ClipFlow.dmg
+
+# Android
+flutter build apk --release
+cp build/app/outputs/flutter-apk/app-release.apk releases/android/ClipFlow.apk
+
+# Windows
+flutter build windows --release
+# 需要 Inno Setup 或 NSIS 打包为 EXE 安装包
+```
+
+## 最新版本
+
+| 平台 | 版本 | 日期 | 文件 |
+|-----|------|------|------|
+| macOS | v1.1.0 | 2026-06-26 | `macos/ClipFlow.dmg` |
+| Android | - | - | 待构建 |
+| Windows | - | - | 待开发 |
